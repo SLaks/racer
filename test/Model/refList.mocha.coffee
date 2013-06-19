@@ -59,6 +59,18 @@ describe 'Model.refList', ->
     id = obj.id
     expect(model.get "items.#{id}").to.specEql {val: 'x', id}
 
+  it 'should not corrupt numeric IDs on member set', ->
+    model = new Model
+    model.set 'items',
+      '8141': {id: 8141, val: 'a'}
+      '8143': {id: 8143, val: 'c'}
+    model.ref '_filtered', model.filter 'items'
+    expect(model.get '_filtered.length').to.be 2
+    model.set '_filtered.0.val', 'b'
+    expect(model.get '_filtered.length').to.be 2
+    expect(model.get '_filtered.0.val').to.be 'b'
+    
+
   it 'should support del of children', ->
     model = new Model
     model.set 'items',
