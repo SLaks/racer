@@ -36,7 +36,8 @@ This fork contains the following changes (sorted by date descending; grouped by 
 Some of these changes have been pull-requested to stock Racer (not all of these pull requests have been accepted); others, particularly those that depend on Derby changes or involve more fundamental overhauls, have not.
 
 ##Breaking changes
-
+ - Don't update count queries on non-private paths if the source collection doesn't exist.  
+This fixes store-backed count queries on data that is not fetched into the local model; Racer will no longer re-run the query locally and see zero results.
  - Prevent all change events when re-building model  
 When the server sends a complete snapshot of the model state, the client will no longer raise change events as it rebuilds everything.  
 This is a major performance boost.  
@@ -110,10 +111,10 @@ Adds a model listener to a subset of model paths.  This function stores listener
 The `path` argument can optionally end in .* to only handle events on descendant path, or .? to only handle events on direct children.  
 Like my `model.on()`, this returns an object with a `cleanup()` method that removes the listener.  **This method is the only way to remove `onPath()` listeners**.
 
- - `count()` queries now update live when the model changes  (see [#91](https://github.com/codeparty/racer/issues/91S))  
-  - **Known bug**: If a count query covers data which is not in the client's view of the model, it will update incorrectly.  
+ - `count()` queries now update live when the model changes  (see [#91](https://github.com/codeparty/racer/issues/91))  
+  - **Known bug**: <strike> If a count query covers data which is not in the client's view of the model, it will update incorrectly.  
 I'm not sure what the best way to fix this is; the query will need to know whether the client knows about its data.  
-Racer 2 may make this simpler.
+Racer 2 may make this simpler.</strike>  This was fixed, although it's still broken if _some_ of the source data is fetched into the local model.
 
  - Multi-part refLists (see [mailing list](https://groups.google.com/forum/?fromgroups=#!topic/derbyjs/5xqPYTaGNEA))  
 Keys in refLists can now contain `.` characters to traverse object paths.

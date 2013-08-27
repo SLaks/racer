@@ -161,6 +161,30 @@ describe 'store.query.expose', ->
         expect($results.get()).to.have.length(0)
         done()
 
+    it "doesn't update count queries if the data isn't in the model", (done) ->
+      store = racer.createStore()
+      model = store.createModel()
+
+      store.query.expose 'users', 'count', () -> @count()
+
+      store.set 'users.1', {
+        id:  '1'
+      }, null, (err) ->
+        expect(err).to.be.null()
+
+        query = model.query('users').count()
+        console.log "Subbing!!!!", query
+        model.subscribe query, (err, brian) ->
+          expect(err).to.be.null()
+          expect(brian.get()).to.be 1
+
+          store.set 'abc', ({id: num, double: 2 * num} for num in [1...50]), null, (err) ->
+            expect(err).to.be.null()
+            model.fetch 'abc.*', (err, abc) ->
+              expect(err).to.be.null()
+              expect(brian.get()).to.be 1
+              done()
+
 #    it 'should send query subscriptions over properly on a resync with Store when it has been disconnected long enough for the Store to forget it @slow bbb', (done) ->
 #      # Txn serializer timeout is 1 second
 #      @timeout 3000
