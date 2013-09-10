@@ -124,6 +124,8 @@ Keys in refLists can now contain `.` characters to traverse object paths.
 
 
 ##Bug fixes
+ - Private sets after public sets will no longer make fetches hang (see [#129](https://github.com/codeparty/racer/issues/129))  
+
  - Failed model writes without callbacks will now throw the original exception.  
 Note that asynchronous failed server-side model sets without a callback will throw an exception that terminates the process.  
 This happens in stock racer too, but my fork will throw the correct exception.  
