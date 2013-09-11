@@ -124,6 +124,7 @@ Keys in refLists can now contain `.` characters to traverse object paths.
 
 
 ##Bug fixes
+ - Docs that are already in the model and are fetched again by queries will not corrupt count queries
  - Private sets after public sets will no longer make fetches hang (see [#129](https://github.com/codeparty/racer/issues/129))  
 
  - Failed model writes without callbacks will now throw the original exception.  
