@@ -1,9 +1,11 @@
 {expect} = require '../util'
 racer = require '../../lib/racer'
 
-describe 'Model bundle', ->
+racer.use require('../db-async-memory')
+
+testStore = (args) ->
   beforeEach (done) ->
-    @store = racer.createStore()
+    @store = racer.createStore(args)
     @store.flush done
 
   afterEach (done) ->
@@ -57,3 +59,8 @@ describe 'Model bundle', ->
   it 'should buffer any transactions received after its own txn application, and send those down to the browser upon socket.io connection'
 
   it 'should expire the local model after the expiry period'
+
+describe 'Model bundle, sync store', ->
+  testStore() 
+describe 'Model bundle, async store', ->
+  testStore({ db: { type: 'AsyncMemory' } }) 
