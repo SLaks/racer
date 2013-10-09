@@ -19,7 +19,8 @@ function plugin (racer) {
   racer.registerAdapter('db', 'AsyncMemory', DbMemory);
 }
 
-function DbMemory () {
+function DbMemory (opts) {
+  this.errorPaths = opts.errorPaths;
   this._flush();
 }
 
@@ -59,6 +60,10 @@ mergeAll(DbMemory.prototype, Memory.prototype, {
         var match = routePattern.exec(path);
         var docPath = match && match[0];
         var topDocPath = docPath.split('.').slice(0, 2).join('.');
+
+        if (self.errorPaths && self.errorPaths.test(path))
+          return done(new Error("Boom!"));
+
         self.get(topDocPath, function (err, topDoc) {
           topDoc = deepCopy(topDoc);
           self.get(docPath, function (err, doc) {

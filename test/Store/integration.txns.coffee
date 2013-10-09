@@ -1,6 +1,34 @@
 {expect} = require '../util'
 transaction = require '../../lib/transaction'
 {mockFullSetup} = require '../util/model'
+racer = require '../../lib/racer'
+
+racer.use require('../db-async-memory')
+racer.use racer.logPlugin
+describe 'Failed Store txns', ->
+  it 'should not affect later txns', (done) ->
+    store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
+    @timeout 300
+    mockFullSetup store, done, [],
+      preBundle: (model) ->
+      postBundle: (model) ->
+      preConnect: (model) ->
+      postConnect: (model, done) ->
+        model.set 'error.1', true, (err) ->
+          expect(err).to.equal 'Boom!'
+          model.set 'good.1', true, ->
+            expect(model.get('good.1')).to.equal true
+            done()
+  it 'should not affect simultaneous txns', (done) ->
+    store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
+    @timeout 300
+    mockFullSetup store, done, [],
+      postConnect: (model, done) ->
+        model.set 'error.1', true, (err) ->
+          expect(err).to.equal 'Boom!'
+        model.set 'good.1', true, ->
+          expect(model.get('good.1')).to.equal true
+          done()
 
 # TODO More tests
 module.exports = (plugins) ->
