@@ -63,6 +63,8 @@ mergeAll(DbMemory.prototype, Memory.prototype, {
 
         if (self.errorPaths && self.errorPaths.test(path))
           return done(new Error("Boom!"));
+        if (/^callNext/.test(path))
+          return next();
 
         self.get(topDocPath, function (err, topDoc) {
           topDoc = deepCopy(topDoc);

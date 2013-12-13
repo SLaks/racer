@@ -19,6 +19,25 @@ describe 'Failed Store txns', ->
           model.set 'good.1', true, ->
             expect(model.get('good.1')).to.equal true
             done()
+  it 'should not affect later txns when missing persistence handlers', (done) ->
+    store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
+    @timeout 300
+    mockFullSetup store, done, [],
+      preBundle: (model) ->
+      postBundle: (model) ->
+      preConnect: (model) ->
+      postConnect: (model, done) ->
+        model.set 'error.1', +new Date(), (err) ->
+          expect(err).to.equal 'Boom!'
+          model.set 'error.2', +new Date(), (err) ->
+            expect(err).to.equal 'Boom!'
+            model.set 'callNext.3', +new Date(), (err) ->
+              expect(err).to.match /^No persistence handler.*callNext.3/
+              model.set 'callNext.4', +new Date(), (err) ->
+                expect(err).to.match /^No persistence handler.*callNext.4/
+                model.set 'good.1', true, ->
+                  expect(model.get('good.1')).to.equal true
+                  done()
   it 'should not affect simultaneous txns', (done) ->
     store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
     @timeout 300
