@@ -31,10 +31,10 @@ describe 'Failed Store txns', ->
           expect(err).to.equal 'Boom!'
           model.set 'error.2', +new Date(), (err) ->
             expect(err).to.equal 'Boom!'
-            model.set 'callNext.3', +new Date(), (err) ->
-              expect(err).to.match /^No persistence handler.*callNext.3/
-              model.set 'callNext.4', +new Date(), (err) ->
-                expect(err).to.match /^No persistence handler.*callNext.4/
+            model.set 'callNext.bad', +new Date(), (err) ->
+              expect(err).to.match /^No persistence handler for set\(callNext.bad/
+              model.push 'callNext.bad', +new Date(), (err) ->
+                expect(err).to.match /^No persistence handler for push\(callNext.bad/
                 model.set 'good.1', true, ->
                   expect(model.get('good.1')).to.equal true
                   done()
