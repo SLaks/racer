@@ -1,6 +1,7 @@
 ﻿'use strict';
 
 var expect = require('../util/').expect;
+var finishAfter = require('../../lib/util/async.js').finishAfter
 var uuid = require('node-uuid');
 
 var heartbeatId = 0;
@@ -31,7 +32,7 @@ describe('Failed Store txns', function () {
       socket.disconnect();
       server.close(done);
     });
-    it('should not break txn queue', function (done) {
+    it('should not break txn queue with different paths', function (done) {
       runTxn('error.first', 1, function (err, args) {
         expect(err).to.match(/Boom/);
 
@@ -42,6 +43,45 @@ describe('Failed Store txns', function () {
         });
       });
     });
+
+    it('should not break txn queue with concurrent ops', function (done) {
+      done = finishAfter(8, done);
+
+      runTxn('normal.path', 1, done);
+      runTxn('callNext.path', 2, function (err, args) {
+        expect(err).to.match(/No persistence handler/);
+        done();
+      });
+      runTxn('normal.path', 3, done);
+      runTxn('error.path2', 4, function (err, args) {
+        expect(err).to.match(/Boom/);
+        done();
+      });
+
+      runTxn('normal.path', 1, done);
+      runTxn('callNext.path', 2, function (err, args) {
+        expect(err).to.match(/No persistence handler/);
+        done();
+      });
+      runTxn('normal.path', 3, done);
+      runTxn('error.path2', 4, function (err, args) {
+        expect(err).to.match(/Boom/);
+        done();
+      });
+    });
+
+
+    it('should not break txn queue with repeated sequential failures', function (done) {
+      runTxn('callNext.path', 1, function (err, args) {
+        expect(err).to.match(/No persistence handler/);
+
+        runTxn('callNext.path', 1, function (err, args) {
+          expect(err).to.match(/No persistence handler/);
+          runTxn('normal.path', 1, done);
+        });
+      });
+    });
+
 
     function runTxn(path, value, cb) {
       var ourTxnId = "txnId." + uuid();
