@@ -14,6 +14,7 @@ describe('Failed Store txns', function () {
       port = ~~(1024 + 30000 + Math.random() * 20000);
       server = http.createServer();
 
+      racer.use(racer.logPlugin);
       racer.use(require('../db-async-memory.js'));
 
       store = racer.createStore({ listen: server, db: { type: 'AsyncMemory', errorPaths: /error/ } });
@@ -22,7 +23,7 @@ describe('Failed Store txns', function () {
 
       socket = require('socket.io-client').connect(
         ':' + port,
-        { query: 'clientId=Heartbeat-' + (++heartbeatId), 'force new connection': true }
+        { query: 'clientId=Test-' + (++heartbeatId), 'force new connection': true }
         );
     });
 
@@ -47,26 +48,30 @@ describe('Failed Store txns', function () {
 
       var okHandler = function (args) {
         /*ver, id, method, opArgs*/
+        if (args[1] !== ourTxnId)
+          return;
+        expect(args[3]).to.eql([path, value]);
+
         socket.removeListener('txnOk', okHandler);
         socket.removeListener('txnErr', errorHandler);
 
-        expect(args[1]).to.be(ourTxnId);
         cb(null, args);
       };
 
       socket.on('txnOk', okHandler);
 
       var errorHandler = function (err, txnId) {
+        if (txnId !== ourTxnId)
+          return;
         socket.removeListener('txnOk', okHandler);
         socket.removeListener('txnErr', errorHandler);
 
-        expect(txnId).to.be(ourTxnId);
         cb(err);
       }
 
       socket.on('txnErr', errorHandler);
 
-      socket.emit('txn', [-1, ourTxnId, "set", [path, value], -1]);
+      socket.emit('txn', [0, ourTxnId, "set", [path, value], -1]);
     }
   });
 });
