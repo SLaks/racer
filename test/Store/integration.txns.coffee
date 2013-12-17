@@ -1,4 +1,5 @@
-{expect} = require '../util'
+{expect, calls} = require '../util'
+{finishAfter} = require '../../lib/util/async'
 transaction = require '../../lib/transaction'
 {mockFullSetup} = require '../util/model'
 racer = require '../../lib/racer'
@@ -39,15 +40,44 @@ describe 'Failed Store txns', ->
                   expect(model.get('good.1')).to.equal true
                   done()
   it 'should not affect simultaneous txns', (done) ->
-    store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
     @timeout 300
+    store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
     mockFullSetup store, done, [],
       postConnect: (model, done) ->
-        model.set 'error.1', true, (err) ->
-          expect(err).to.equal 'Boom!'
+        done = finishAfter 4, done
+
+        directModel = store.createModel()
+        directModel.set 'good.1', 82, ->
+          expect(directModel.get('good.1')).to.equal 82
+          done()
+        directModel.set 'callNext.bad', true, (err) ->
+          expect(err.message).to.match /^No persistence handler for set\(callNext.bad/
+          done()
+
         model.set 'good.1', true, ->
           expect(model.get('good.1')).to.equal true
           done()
+        model.set 'error.1', true, (err) ->
+          expect(err).to.equal 'Boom!'
+          done()
+
+describe 'Failed direct store txns', ->
+  it 'should not affect simultaneous txns', calls 4, (done) ->
+    @timeout 300
+    store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
+    model = store.createModel()
+    model.set 'good.1', true, ->
+      expect(model.get('good.1')).to.equal true
+      done()
+    model.set 'callNext.bad', true, (err) ->
+      expect(err.message).to.match /^No persistence handler for set\(callNext.bad/
+      done()
+    model.set 'good.1', true, ->
+      expect(model.get('good.1')).to.equal true
+      done()
+    model.set 'error.1', true, (err) ->
+      expect(err.message).to.equal 'Boom!'
+      done()
 
 # TODO More tests
 module.exports = (plugins) ->
