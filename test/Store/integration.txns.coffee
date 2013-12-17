@@ -44,13 +44,21 @@ describe 'Failed Store txns', ->
     store = racer.createStore { db: { type: 'AsyncMemory', errorPaths: /error/ } }
     mockFullSetup store, done, [],
       postConnect: (model, done) ->
-        done = finishAfter 4, done
+        done = finishAfter 6, done
 
         directModel = store.createModel()
         directModel.set 'good.1', 82, ->
           expect(directModel.get('good.1')).to.equal 82
           done()
         directModel.set 'callNext.bad', true, (err) ->
+          expect(err.message).to.match /^No persistence handler for set\(callNext.bad/
+          done()
+
+        store.set 'good.2', 47, 0, ->
+          store.get 'good.2', (err, val) ->
+            expect(val).to.equal 47
+            done(err)
+        store.set 'callNext.bad', true, 0, (err) ->
           expect(err.message).to.match /^No persistence handler for set\(callNext.bad/
           done()
 
